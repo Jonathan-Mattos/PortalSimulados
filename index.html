@@ -311,48 +311,54 @@
         }
 
         async function loadData(url, titulo) {
-            document.getElementById('quiz-core').style.display = 'none';
-            document.getElementById('result-screen').style.display = 'none';
-            document.getElementById('loading-status').style.display = 'block';
-            document.getElementById('current-title').innerText = titulo;
+    document.getElementById('quiz-core').style.display = 'none';
+    document.getElementById('result-screen').style.display = 'none';
+    document.getElementById('loading-status').style.display = 'block';
+    document.getElementById('current-title').innerText = titulo;
 
-            try {
-                const response = await fetch(url + "&t=" + new Date().getTime());
-                const csvData = await response.text();
-                const rows = csvData.split(/\r?\n/).filter(r => r.trim() !== "");
+    try {
+        // Mudança: Forçamos o link a sempre baixar o CSV correto
+        const csvUrl = url.replace('/pubhtml', '/pub?output=csv');
+        const response = await fetch(csvUrl + "&t=" + new Date().getTime());
+        const csvData = await response.text();
+        
+        // Divide as linhas, mas lida com possíveis quebras de linha dentro da célula
+        const rows = csvData.split(/\r?\n/).filter(r => r.trim() !== "");
+        
+        questions = rows.slice(1).map(row => {
+            // REGEX MÁGICA: Divide por vírgula, mas IGNORA vírgulas dentro de aspas
+            const cols = row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
+            
+            if (cols && cols.length >= 6) {
+                const clean = (t) => t ? t.replace(/^"|"$/g, "").replace(/""/g, '"').trim() : "";
                 
-                // --- INICIO DA MODIFICAÇÃO SUGERIDA (REGEX ROBUSTA) ---
-                questions = rows.slice(1).map(row => {
-                    const cols = row.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g);
-                    
-                    if (cols && cols.length >= 6) {
-                        const clean = (t) => t ? t.replace(/^"|"$/g, "").trim() : "";
-                        
-                        return {
-                            q: clean(cols[0]),
-                            options: [
-                                clean(cols[1]), 
-                                clean(cols[2]), 
-                                clean(cols[3]), 
-                                clean(cols[4])
-                            ],
-                            correct: parseInt(clean(cols[5])),
-                            exp: cols[6] ? clean(cols[6]) : "Sem comentário técnico."
-                        };
-                    }
-                    return null;
-                }).filter(q => q !== null);
-                // --- FIM DA MODIFICAÇÃO SUGERIDA ---
-
-                answers = new Array(questions.length).fill(null);
-                currentIdx = 0; timeLeft = 7200;
-                document.getElementById('loading-status').style.display = 'none';
-                document.getElementById('quiz-core').style.display = 'block';
-                startTimer(); renderQ();
-            } catch (e) {
-                alert("Erro ao carregar planilha. Verifique a publicação CSV.");
+                return {
+                    q: clean(cols[0]),
+                    options: [
+                        clean(cols[1]), 
+                        clean(cols[2]), 
+                        clean(cols[3]), 
+                        clean(cols[4])
+                    ],
+                    correct: parseInt(clean(cols[5])),
+                    exp: cols[6] ? clean(cols[6]) : "Sem comentário técnico."
+                };
             }
-        }
+            return null;
+        }).filter(q => q !== null);
+
+        answers = new Array(questions.length).fill(null);
+        currentIdx = 0; 
+        timeLeft = 7200;
+        document.getElementById('loading-status').style.display = 'none';
+        document.getElementById('quiz-core').style.display = 'block';
+        startTimer(); 
+        renderQ();
+    } catch (e) {
+        console.error(e);
+        alert("Erro ao carregar os dados. Verifique se a planilha está publicada como CSV.");
+    }
+}
 
         function startTimer() {
             clearInterval(timerInt);
