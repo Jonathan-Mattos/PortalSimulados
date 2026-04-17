@@ -24,10 +24,13 @@
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: var(--primary-blue);
-            margin: 0; display: flex; height: 100vh; overflow: hidden;
-            user-select: none;
+          font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: var(--primary-blue);
+    margin: 0; 
+    display: flex; 
+    height: 100vh; 
+    overflow: hidden; /* Mantém o corte apenas na estrutura principal */
+    user-select: none;
         }
 
         /* --- BARRA LATERAL --- */
@@ -80,13 +83,21 @@
         /* --- ÁREA CENTRAL --- */
         .main-content {
             flex-grow: 1; display: flex; flex-direction: column;
-            align-items: center; justify-content: center; padding: 20px; overflow-y: auto;
+            align-items: center; justify-content: flex-start; padding: 40px 20px; overflow-y: auto;
         }
 
         .quiz-container {
-            background: var(--white); width: 100%; max-width: 850px;
-            min-height: 450px; border-radius: 12px; padding: 35px;
-            box-shadow: 0 15px 35px rgba(0,0,0,0.4); position: relative;
+            background: var(--white);
+    width: 100%;
+    max-width: 850px;
+    /* REMOVI height fixa e min-height fixa */
+    height: auto;                
+    min-height: fit-content;    
+    border-radius: 12px;
+    padding: 35px;
+    box-shadow: 0 15px 35px rgba(0,0,0,0.4);
+    position: relative;
+    margin-bottom: 50px;
         }
 
         /* Formulário de Entrada */
@@ -105,13 +116,20 @@
 
         /* AJUSTE CSS PARA TEXTOS LONGOS */
         .option-card {
-            padding: 14px; border: 2px solid #e0e0e0; border-radius: 8px;
-            margin-bottom: 10px; cursor: pointer; transition: 0.2s;
-            height: auto;           /* Permite que o card cresça verticalmente */
-            min-height: 50px;
-            word-wrap: break-word;  /* Força a quebra de linha em palavras gigantes */
-            overflow: visible;      /* Garante que nada fique escondido */
-            line-height: 1.4;       /* Melhora a leitura de textos longos */
+            padding: 14px;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    cursor: pointer;
+    transition: 0.2s;
+    /* Garante que o texto longo quebre a linha e não suma */
+    display: block;             
+    height: auto !important;     
+    min-height: 50px;
+    word-wrap: break-word;       
+    overflow-wrap: break-word;
+    white-space: normal;         /* Força o texto a ocupar várias linhas */
+    line-height: 1.5;
         }
         .option-card:hover { border-color: var(--primary-blue); background: #f0f4ff; transform: translateX(5px); }
         .option-card.selected { border-color: var(--primary-blue); background: #e0e7ff; font-weight: bold; }
