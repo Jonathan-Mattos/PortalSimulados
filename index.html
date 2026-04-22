@@ -369,7 +369,7 @@
             loadData(currentUrl, currentTitle);
         }
 
-        async function loadData(url, titulo) {
+  async function loadData(url, titulo) {
     document.getElementById('quiz-core').style.display = 'none';
     document.getElementById('result-screen').style.display = 'none';
     document.getElementById('loading-status').style.display = 'block';
@@ -382,41 +382,34 @@
         
         const rows = csvData.split(/\r?\n/).filter(r => r.trim() !== "");
         
-       questions = rows.slice(1).map(row => {
-    // Nova lógica para separar colunas CSV respeitando aspas do Google Sheets
-    const cols = [];
-    let startValue = 0;
-    let inQuotes = false;
-
-    for (let i = 0; i < row.length; i++) {
-        if (row[i] === '"') inQuotes = !inQuotes;
-        if (row[i] === ',' && !inQuotes) {
-            cols.push(row.substring(startValue, i));
-            startValue = i + 1;
-        }
-    }
-    cols.push(row.substring(startValue));
-
-    if (cols.length >= 6) {
-        // Função para remover aspas triplas ou duplas que o Sheets coloca em textos com aspas
-        const clean = (t) => {
-            if (!t) return "";
-            let text = t.trim();
-            if (text.startsWith('"') && text.endsWith('"')) {
-                text = text.substring(1, text.length - 1);
+        questions = rows.slice(1).map(row => {
+            // REGEX AVANÇADA: Divide por vírgula, mas ignora vírgulas dentro de aspas
+            const cols = row.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g) || row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
+            
+            if (cols && cols.length >= 6) {
+                const clean = (t) => {
+                    if(!t) return "";
+                    return t.replace(/^"|"$/g, '') // Remove aspas do início e fim
+                            .replace(/""/g, '"')    // Transforma aspas duplas em simples
+                            .trim();
+                };
+                
+                return {
+                    q: clean(cols[0]),
+                    options: [
+                        clean(cols[1]), 
+                        clean(cols[2]), 
+                        clean(cols[3]), 
+                        clean(cols[4])
+                    ],
+                    correct: parseInt(clean(cols[5])),
+                    exp: cols[6] ? clean(cols[6]) : "Sem comentário técnico."
+                };
             }
-            return text.replace(/""/g, '"').trim(); 
-        };
+            return null;
+        }).filter(q => q !== null);
 
-        return {
-            q: clean(cols[0]),
-            options: [clean(cols[1]), clean(cols[2]), clean(cols[3]), clean(cols[4])],
-            correct: parseInt(clean(cols[5])),
-            exp: cols[6] ? clean(cols[6]) : "Sem comentário técnico."
-        };
-    }
-    return null;
-}).filter(q => q !== null);
+        if (questions.length === 0) throw new Error("Nenhuma questão processada.");
 
         answers = new Array(questions.length).fill(null);
         currentIdx = 0; 
@@ -427,7 +420,7 @@
         renderQ();
     } catch (e) {
         console.error(e);
-        alert("Erro ao carregar os dados. Verifique se a planilha está publicada como CSV.");
+        alert("Erro ao processar planilha. Verifique se os textos possuem muitas aspas ou vírgulas.");
     }
 }
 
