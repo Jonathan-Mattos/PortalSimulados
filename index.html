@@ -382,26 +382,41 @@
         
         const rows = csvData.split(/\r?\n/).filter(r => r.trim() !== "");
         
-        questions = rows.slice(1).map(row => {
-            const cols = row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
-            
-            if (cols && cols.length >= 6) {
-                const clean = (t) => t ? t.replace(/^"|"$/g, "").replace(/""/g, '"').trim() : "";
-                
-                return {
-                    q: clean(cols[0]),
-                    options: [
-                        clean(cols[1]), 
-                        clean(cols[2]), 
-                        clean(cols[3]), 
-                        clean(cols[4])
-                    ],
-                    correct: parseInt(clean(cols[5])),
-                    exp: cols[6] ? clean(cols[6]) : "Sem comentário técnico."
-                };
+       questions = rows.slice(1).map(row => {
+    // Nova lógica para separar colunas CSV respeitando aspas do Google Sheets
+    const cols = [];
+    let startValue = 0;
+    let inQuotes = false;
+
+    for (let i = 0; i < row.length; i++) {
+        if (row[i] === '"') inQuotes = !inQuotes;
+        if (row[i] === ',' && !inQuotes) {
+            cols.push(row.substring(startValue, i));
+            startValue = i + 1;
+        }
+    }
+    cols.push(row.substring(startValue));
+
+    if (cols.length >= 6) {
+        // Função para remover aspas triplas ou duplas que o Sheets coloca em textos com aspas
+        const clean = (t) => {
+            if (!t) return "";
+            let text = t.trim();
+            if (text.startsWith('"') && text.endsWith('"')) {
+                text = text.substring(1, text.length - 1);
             }
-            return null;
-        }).filter(q => q !== null);
+            return text.replace(/""/g, '"').trim(); 
+        };
+
+        return {
+            q: clean(cols[0]),
+            options: [clean(cols[1]), clean(cols[2]), clean(cols[3]), clean(cols[4])],
+            correct: parseInt(clean(cols[5])),
+            exp: cols[6] ? clean(cols[6]) : "Sem comentário técnico."
+        };
+    }
+    return null;
+}).filter(q => q !== null);
 
         answers = new Array(questions.length).fill(null);
         currentIdx = 0; 
